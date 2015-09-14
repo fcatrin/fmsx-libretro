@@ -314,7 +314,17 @@ bool retro_load_game(const struct retro_game_info *info)
    UPeriod=100;
 
    strcpy(ROMName_buffer[0], info->path);
-   ROMName[0]=ROMName_buffer[0];
+
+   char *dot = strrchr(ROMName_buffer[0], '.');
+   if (dot && !strcmp(dot, ".dsk")) {
+	   DSKName[0]=ROMName_buffer[0];
+	      if (log_cb)
+	         log_cb(RETRO_LOG_INFO, "Using disk %s\n", DSKName[0]);
+   } else {
+	   ROMName[0]=ROMName_buffer[0];
+	      if (log_cb)
+	         log_cb(RETRO_LOG_INFO, "Using rom %s\n", ROMName[0]);
+   }
 //   SETJOYTYPE(0,1);
 //   ProgDir=".";
 
