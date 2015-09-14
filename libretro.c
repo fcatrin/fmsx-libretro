@@ -206,13 +206,13 @@ void retro_reset(void)
 
 size_t retro_serialize_size(void)
 {
-   return 0x40000;
+   return MAX_STASIZE;
 }
 
 bool retro_serialize(void *data, size_t size)
 {
    if (!SaveState(data, size))
-      return false;
+	   return false;
 
    return true;
 }
