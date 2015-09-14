@@ -33,6 +33,23 @@ static uint16_t XPal0;
 #define WBuf image_buffer
 #include "CommonMux.h"
 
+#define KBD_1 0x31
+
+static const unsigned msx_to_retro_id[] = {
+         RETRO_DEVICE_ID_JOYPAD_UP,
+         RETRO_DEVICE_ID_JOYPAD_DOWN,
+         RETRO_DEVICE_ID_JOYPAD_LEFT,
+         RETRO_DEVICE_ID_JOYPAD_RIGHT,
+         RETRO_DEVICE_ID_JOYPAD_B,
+         RETRO_DEVICE_ID_JOYPAD_A,
+         RETRO_DEVICE_ID_JOYPAD_START,
+         RETRO_DEVICE_ID_JOYPAD_SELECT,
+         RETRO_DEVICE_ID_JOYPAD_Y,
+         RETRO_DEVICE_ID_JOYPAD_X
+};
+
+uint16_t joy_state = 0;
+
 uint8_t XKeyState[20];
 #define XKBD_SET(K) XKeyState[Keys[K][0]]&=~Keys[K][1]
 #define XKBD_RES(K) XKeyState[Keys[K][0]]|=Keys[K][1]
@@ -152,8 +169,8 @@ void retro_set_environment(retro_environment_t cb)
 {
    environ_cb = cb;
    static const struct retro_controller_description port[] = {
-      { "RetroKeyboard", RETRO_DEVICE_KEYBOARD },
-//      { "RetroPad", RETRO_DEVICE_JOYPAD }
+//      { "RetroKeyboard", RETRO_DEVICE_KEYBOARD },
+      { "RetroPad", RETRO_DEVICE_JOYPAD }
    };
 
    static const struct retro_controller_info ports[] = {
@@ -269,6 +286,10 @@ static void check_variables(void)
    {
       Mode |= MSX_GUESSA;
    }
+   
+   // enable joystick on port 1 & 2
+   Mode |= MSX_JOY1;
+   Mode |= MSX_JOY2;
 }
 
 bool retro_load_game(const struct retro_game_info *info)
@@ -294,7 +315,7 @@ bool retro_load_game(const struct retro_game_info *info)
 
    strcpy(ROMName_buffer[0], info->path);
    ROMName[0]=ROMName_buffer[0];
-   SETJOYTYPE(0,1);
+//   SETJOYTYPE(0,1);
 //   ProgDir=".";
 
    static Image fMSX_image;
@@ -370,7 +391,7 @@ unsigned int WriteAudio(sample *Data,unsigned int Length)
 
 unsigned int Joystick(void)
 {
-   return 0;
+   return joy_state;
 }
 
 void Keyboard(void)
@@ -424,6 +445,42 @@ size_t retro_get_memory_size(unsigned id)
    if (max_frame_ticks < current_ticks) max_frame_ticks = current_ticks
 
 
+void read_input_state() {
+
+   int i;
+   
+   for (i=0; i < 130; i++)
+      KBD_RES(i);
+
+   for (i=0; i < sizeof(keymap)/sizeof(keymap_t); i++)
+      if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, keymap[i].retro))
+         KBD_SET(keymap[i].fmsx);
+
+   joy_state = 0;
+   for(int port = 0; port<2; port++) {
+      int port_state = 0;
+      for(int id=0; id<6; id++) {
+         if (input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, msx_to_retro_id[id])) {
+            port_state |= 1 << id;   
+         }
+      }
+      joy_state |= port_state << (port*8);
+   }
+
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) {
+      KBD_SET(KBD_SPACE);
+   }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) {
+      KBD_SET(KBD_ESCAPE);
+   }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X)) {
+      KBD_SET(KBD_1);
+   }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y)) {
+      KBD_SET(KBD_ENTER);
+   }
+}
+
 #ifdef PSP
 #include <pspgu.h>
 #endif
@@ -437,13 +494,7 @@ void retro_run(void)
 
    input_poll_cb();
 
-   for (i=0; i < 130; i++)
-      KBD_RES(i);
-
-   for (i=0; i < sizeof(keymap)/sizeof(keymap_t); i++)
-      if (input_state_cb(0, RETRO_DEVICE_KEYBOARD, 0, keymap[i].retro))
-         KBD_SET(keymap[i].fmsx);
-
+   read_input_state();
 
    RETRO_PERFORMANCE_INIT(core_retro_run);
    RETRO_PERFORMANCE_START(core_retro_run);
