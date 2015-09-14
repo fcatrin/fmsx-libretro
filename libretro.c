@@ -64,6 +64,13 @@ static struct retro_perf_callback perf_cb = {};
 
 static retro_perf_tick_t max_frame_ticks = 0;
 
+#define MAX_DISKS 10
+#define MAX_DISK_FILENAME 512
+
+static bool multiDisk = false;
+static int disks = 0;
+static int diskInserted = 0;
+static char diskNames[MAX_DISKS][MAX_DISK_FILENAME];
 
 typedef struct
 {
@@ -182,6 +189,7 @@ void retro_set_environment(retro_environment_t cb)
       { "fmsx_mode", "MSX Mode; MSX1|MSX2|MSX2+" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
       { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; Guess Mapper Type A|Guess Mapper Type B" },
+      { "fmsx_multidisk", "MultiDisk support; true|false" },
       { NULL, NULL },
    };
 
@@ -287,6 +295,13 @@ static void check_variables(void)
       Mode |= MSX_GUESSA;
    }
    
+   var.key = "fmsx_multidisk";
+   var.value = NULL;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+	   multiDisk = strcmp(var.value, "true") == 0;
+   }
+
    // enable joystick on port 1 & 2
    Mode |= MSX_JOY1;
    Mode |= MSX_JOY2;
@@ -313,17 +328,51 @@ bool retro_load_game(const struct retro_game_info *info)
 
    UPeriod=100;
 
-   strcpy(ROMName_buffer[0], info->path);
 
-   char *dot = strrchr(ROMName_buffer[0], '.');
-   if (dot && !strcmp(dot, ".dsk")) {
-	   DSKName[0]=ROMName_buffer[0];
-	      if (log_cb)
-	         log_cb(RETRO_LOG_INFO, "Using disk %s\n", DSKName[0]);
+   if (multiDisk) {
+	   char dirName[MAX_DISK_FILENAME];
+	   char path[MAX_DISK_FILENAME];
+
+	   strcpy(path, info->path);
+
+	   char *dirPath = strtok(path, "|");
+	   strncpy(dirName, dirPath, MAX_DISK_FILENAME);
+
+	   disks = 0;
+	   for(int i=0; i<MAX_DISKS; i++) {
+		   char *diskPath = strtok(NULL, "|");
+		   if (diskPath == NULL) break;
+
+		   char *diskName = diskNames[i];
+		   strcpy(diskName, dirName);
+		   strcat(diskName, "/");
+		   strcat(diskName, diskPath);
+		   disks++;
+		   log_cb(RETRO_LOG_INFO, "Using disk[%d]=%s\n", disks, diskName);
+	   }
+	   if (disks>0) {
+		   DSKName[0] = diskNames[0];
+		   diskInserted = 0;
+	   } else {
+		   log_cb(RETRO_LOG_INFO, "Invalid multidisk path %s\n", info->path);
+	   }
    } else {
-	   ROMName[0]=ROMName_buffer[0];
-	      if (log_cb)
-	         log_cb(RETRO_LOG_INFO, "Using rom %s\n", ROMName[0]);
+	   strcpy(ROMName_buffer[0], info->path);
+	   char *dot = strrchr(ROMName_buffer[0], '.');
+	   if (dot && !strcmp(dot, ".dsk")) {
+		   DSKName[0]=ROMName_buffer[0];
+		   if (log_cb) {
+			   log_cb(RETRO_LOG_INFO, "Using disk %s\n", DSKName[0]);
+			   log_cb(RETRO_LOG_INFO, "Total disks %d\n", disks);
+			   for(int i=0; i<disks; i++) {
+				   log_cb(RETRO_LOG_INFO, "Disk[%d]=%s\n", i, diskNames[i]);
+			   }
+		   }
+	   } else {
+		   ROMName[0]=ROMName_buffer[0];
+			  if (log_cb)
+				 log_cb(RETRO_LOG_INFO, "Using rom %s\n", ROMName[0]);
+	   }
    }
 //   SETJOYTYPE(0,1);
 //   ProgDir=".";
@@ -420,6 +469,23 @@ unsigned int GetJoystick(void)
 }
 bool retro_load_game_special(unsigned a, const struct retro_game_info *b, size_t c)
 {
+	log_cb(RETRO_LOG_INFO, "retro_load_game_special inserted.1\n");
+	if (!multiDisk) return false;
+	log_cb(RETRO_LOG_INFO, "retro_load_game_special inserted.2\n");
+
+	diskInserted++;
+	if (diskInserted >= disks) {
+		diskInserted = 0;
+	}
+	log_cb(RETRO_LOG_INFO, "retro_load_game_special inserted.3\n");
+
+	if (ChangeDisk(0, diskNames[diskInserted])) {
+		log_cb(RETRO_LOG_INFO, "disk inserted %s.\n", diskNames[diskInserted]);
+		return true;
+	} else {
+		log_cb(RETRO_LOG_INFO, "failed to insert disk %s.\n", diskNames[diskInserted]);
+	}
+
    return false;
 }
 
