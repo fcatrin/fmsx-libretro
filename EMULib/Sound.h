@@ -146,6 +146,9 @@ int MIDILogging(int Switch);
 /*************************************************************/
 void MIDITicks(int N);
 
+unsigned int InitAudio(unsigned int Rate,unsigned int Latency);
+void TrashAudio(void);
+
 #if !defined(MSDOS) & !defined(UNIX) & !defined(MAEMO) & !defined(WINDOWS) & !defined(S60) & !defined(UIQ) && !defined(ANDROID)
 #define SND_CHANNELS MIDI_CHANNELS         /* Default number */
 #endif
