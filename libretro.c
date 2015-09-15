@@ -188,7 +188,7 @@ void retro_set_environment(retro_environment_t cb)
    static const struct retro_variable vars[] = {
       { "fmsx_mode", "MSX Mode; MSX1|MSX2|MSX2+" },
       { "fmsx_video_mode", "MSX Video Mode; NTSC|PAL" },
-      { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; Guess Mapper Type A|Guess Mapper Type B" },
+      { "fmsx_mapper_type_mode", "MSX Mapper Type Mode; MapperTypeA|MapperTypeB" },
       { "fmsx_multidisk", "MultiDisk support; true|false" },
       { NULL, NULL },
    };
@@ -285,9 +285,9 @@ static void check_variables(void)
 
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
-      if (strcmp(var.value, "Guess Mapper Type A") == 0)
+      if (strcmp(var.value, "MapperTypeA") == 0)
          Mode |= MSX_GUESSA;
-      else if (strcmp(var.value, "Guess Mapper Type B") == 0)
+      else if (strcmp(var.value, "MapperTypeB") == 0)
          Mode |= MSX_GUESSB;
    }
    else
