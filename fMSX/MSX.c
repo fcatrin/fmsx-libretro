@@ -2439,6 +2439,8 @@ int GuessROM(const byte *Buf,int Size)
   char S[256];
   FILE *F;
 
+  if(ProgDir) chdir(ProgDir);
+
   /* Try opening file with CRCs */
   if(F=fopen("CARTS.CRC","rb"))
   {
