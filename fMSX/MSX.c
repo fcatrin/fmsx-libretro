@@ -25,6 +25,8 @@
 #include <fcntl.h>
 #include <time.h>
 
+#include "../libretrodebug.h"
+
 #if defined(UNIX) || defined(S60)
 #include <unistd.h>
 #endif
