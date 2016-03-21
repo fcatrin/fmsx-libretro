@@ -263,6 +263,8 @@ extern const char *FNTName;           /* Font file for text  */
 extern FDIDisk FDD[4];                /* Floppy disk images  */
 extern FILE *CasStream;               /* Cassette I/O stream */
 
+extern byte FMPACOn;
+
 /** StartMSX() ***********************************************/
 /** Allocate memory, load ROM image, initialize hardware,   **/
 /** CPU and start the emulation. This function returns 0 in **/

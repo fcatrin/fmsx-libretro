@@ -145,6 +145,7 @@ YM2413 OPLL;                       /* OPLL registers & state */
 SCC  SCChip;                       /* SCC registers & state  */
 byte SCCOn[2];                     /* 1 = SCC page active    */
 word FMPACKey;                     /* MAGIC = SRAM active    */
+byte FMPACOn;
 
 /** Serial I/O hardware: i8251+i8253 *************************/
 I8251 SIO;                         /* SIO registers & state  */
@@ -510,7 +511,7 @@ int StartMSX(int NewMode,int NewRAMPages,int NewVRAMPages)
 
   /* Load FMPAC cartridge */
   for(;(J<MAXSLOTS)&&ROMData[J];++J);
-  if((J<MAXSLOTS)&&LoadCart("FMPAC.ROM",J,MAP_FMPAC)) ++J;
+  if((J<MAXSLOTS)&& FMPACOn && LoadCart("FMPAC.ROM",J,MAP_FMPAC)) ++J;
 
   /* Load Konami GameMaster2/GameMaster cartridges */
   for(;(J<MAXSLOTS)&&ROMData[J];++J);
