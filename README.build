@@ -1,9 +1,0 @@
-
-cd ~/tmp/retrobox/retroarch-1.2.2/libretro-super
-
-# ln -s ~/devel/retrobox.kepler/libretro-fmsx .
-
-export ANDROID_NDK=/Users/fcatrin/devel/android-ndk-r10d
-export NDK=/Users/fcatrin/devel/android-ndk-r10d
-
- ./libretro-build-android-mk.sh build_libretro_fmsx
