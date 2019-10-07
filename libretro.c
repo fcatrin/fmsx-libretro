@@ -34,6 +34,7 @@ static uint16_t XPal0;
 #include "CommonMux.h"
 
 #define KBD_1 0x31
+#define KBD_2 0x32
 
 static const unsigned msx_to_retro_id[] = {
          RETRO_DEVICE_ID_JOYPAD_UP,
@@ -559,12 +560,25 @@ void read_input_state() {
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) {
       KBD_SET(KBD_ESCAPE);
    }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X)) {
-      KBD_SET(KBD_1);
-   }
    if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y)) {
+      KBD_SET(KBD_SPACE);
+   }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X)) {
       KBD_SET(KBD_ENTER);
    }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) {
+      KBD_SET(KBD_F1);
+   }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) {
+      KBD_SET(KBD_F5);
+   }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2)) {
+      KBD_SET(KBD_1);
+   }
+   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2)) {
+      KBD_SET(KBD_2);
+   }
+
 }
 
 #ifdef PSP
