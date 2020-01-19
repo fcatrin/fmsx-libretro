@@ -105,9 +105,6 @@ extern "C" {
 #define MAXMAPPERS  8       /* Total defined MegaROM mappers */
 #define MAXCHUNKS   256     /* Max number of memory blocks   */
 
-#define MAXCHANNELS (AY8910_CHANNELS+YM2413_CHANNELS)
-  /* Number of sound channels used by the emulation */
-
 /** Model and options bits and macros ************************/
 #define MODEL(M)        ((Mode&MSX_MODEL)==(M))
 #define VIDEO(M)        ((Mode&MSX_VIDEO)==(M))
