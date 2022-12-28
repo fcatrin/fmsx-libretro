@@ -410,6 +410,8 @@ bool retro_load_game(const struct retro_game_info *info)
 
    int maxChannels = AY8910_CHANNELS + YM2413_CHANNELS;
    SetChannels(144, (1<<maxChannels)-1);
+
+   // Use same fmpac volume as scc for now, until I get some game for testing
    SetChannelsVolume(0.8f, 0.5f, 0, AY8910_CHANNELS);
 
    ExitNow = 1;
