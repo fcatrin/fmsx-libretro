@@ -408,9 +408,9 @@ bool retro_load_game(const struct retro_game_info *info)
 
    InitSound(SND_RATE, 0);
 
-   int maxChannels = AY8910_CHANNELS + (FMPACOn ? YM2413_CHANNELS : 0);
-
-   SetChannels(255/maxChannels, (1<<maxChannels)-1);
+   int maxChannels = AY8910_CHANNELS + YM2413_CHANNELS;
+   SetChannels(144, (1<<maxChannels)-1);
+   SetChannelsVolume(0.8f, 0.5f, 0, AY8910_CHANNELS);
 
    ExitNow = 1;
    StartMSX(Mode,RAMPages,VRAMPages);

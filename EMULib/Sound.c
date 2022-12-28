@@ -216,6 +216,18 @@ void SetChannels(int Volume,int Switch)
   MasterSwitch = Switch&((1<<SND_CHANNELS)-1);
 }
 
+static float mixer[SND_CHANNELS];
+
+void SetChannelsVolume(float psgVolume, float sccVolume, float fmpacVolume, int baseChannels) {
+    for(int i=0; i<baseChannels; i++) {
+        mixer[i] = psgVolume;
+    }
+    float othersVolume = sccVolume ? sccVolume : fmpacVolume;
+    for(int i=baseChannels; i<SND_CHANNELS; i++) {
+        mixer[i] = othersVolume;
+    }
+}
+
 /** SetWave() ************************************************/
 /** Set waveform for a given channel. The channel will be   **/
 /** marked with sound type SND_WAVE. Set Rate=0 if you want **/
@@ -675,7 +687,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
               L2 = L2%K;
             }
             /* Output waveform */
-            Wave[I]+=A1;
+            Wave[I]+=A1 * mixer[J];
             /* Next waveform step */
             L2+=0x8000;
           }
@@ -693,7 +705,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
             if(L2<K)
             {
               /* Interpolate linearly */
-              Wave[I]+=A1+L*(A2-A1)/N;
+              Wave[I]+=(A1+L*(A2-A1)/N) * mixer[J];
               /* Next waveform step */
               L2+=0x8000;
               /* Next interpolation step */
@@ -704,7 +716,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
               L1 = (L1+L2/K)%WaveCH[J].Length;
               L2 = (L2%K)+0x8000;
               A1 = WaveCH[J].Data[L1]*V;
-              Wave[I]+=A1;
+              Wave[I]+=A1 * mixer[J];
               /* If expecting interpolation... */
               if(L2<K)
               {
@@ -733,7 +745,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
               if((NoiseGen<<=1)&0x80000000) NoiseGen^=0x08000001;
               L1&=0xFFFF;
             }
-            Wave[I]+=(NoiseGen&1? 127:-128)*V;
+            Wave[I]+=(NoiseGen&1? 127:-128)*V * mixer[J];
           }
           WaveCH[J].Count=L1;
           break;
@@ -747,7 +759,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
           L1=WaveCH[J].Count;
 #ifndef SLOW_MELODIC_AUDIO
           for(I=0;I<Samples;I++,L1+=K)
-            Wave[I]+=((L1-K)^(L1+K))&0x8000? 0:(L1&0x8000? 127:-128)*V;
+            Wave[I]+=((L1-K)^(L1+K))&0x8000? 0:(L1&0x8000? 127:-128)*V * mixer[J];
 #else
           for(I=0;I<Samples;I++,L1+=K)
           {
@@ -755,7 +767,7 @@ void RenderAudio(int *Wave,unsigned int Samples)
             A1 = L1&0x8000? 127:-128;
             if((L1^L2)&0x8000)
               A1=A1*(0x8000-(L1&0x7FFF)-(L2&0x7FFF))/K;
-            Wave[I]+=A1*V;
+            Wave[I]+=A1*V * mixer[J];
           }
 #endif
           WaveCH[J].Count=L1&0xFFFF;

@@ -100,6 +100,8 @@ void SetSound(int Channel,int NewType);
 /*************************************************************/
 void SetChannels(int Volume,int Switch);
 
+void SetChannelsVolume(float psgVolume, float sccVolume, float fmpacVolume, int baseChannels);
+
 /** SetWave() ************************************************/
 /** Set waveform for a given channel. The channel will be   **/
 /** marked with sound type SND_WAVE. Set Rate=0 if you want **/
