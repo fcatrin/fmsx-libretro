@@ -33,21 +33,8 @@ static uint16_t XPal0;
 #define WBuf image_buffer
 #include "CommonMux.h"
 
-#define KBD_1 0x31
-#define KBD_2 0x32
-
-static const unsigned msx_to_retro_id[] = {
-         RETRO_DEVICE_ID_JOYPAD_UP,
-         RETRO_DEVICE_ID_JOYPAD_DOWN,
-         RETRO_DEVICE_ID_JOYPAD_LEFT,
-         RETRO_DEVICE_ID_JOYPAD_RIGHT,
-         RETRO_DEVICE_ID_JOYPAD_B,
-         RETRO_DEVICE_ID_JOYPAD_A,
-         RETRO_DEVICE_ID_JOYPAD_START,
-         RETRO_DEVICE_ID_JOYPAD_SELECT,
-         RETRO_DEVICE_ID_JOYPAD_Y,
-         RETRO_DEVICE_ID_JOYPAD_X
-};
+#define IS_JS_EVENT   0x10000
+#define MASK_JS_EVENT 0x0FFFF
 
 #define MSX_GAMEPAD_MAP_SIZE 16
 static unsigned msx_gamepad_map[MSX_GAMEPAD_MAP_SIZE*2];
@@ -56,6 +43,25 @@ static char *msx_gamepad_map_names[] = {
     "start", "select",
     "a", "b", "x", "y",
     "l", "r", "l2", "r2", "l3", "r3"
+};
+
+static const unsigned msx_gamepad_map_inputs[] = {
+    RETRO_DEVICE_ID_JOYPAD_LEFT,
+    RETRO_DEVICE_ID_JOYPAD_RIGHT,
+    RETRO_DEVICE_ID_JOYPAD_UP,
+    RETRO_DEVICE_ID_JOYPAD_DOWN,
+    RETRO_DEVICE_ID_JOYPAD_START,
+    RETRO_DEVICE_ID_JOYPAD_SELECT,
+    RETRO_DEVICE_ID_JOYPAD_A,
+    RETRO_DEVICE_ID_JOYPAD_B,
+    RETRO_DEVICE_ID_JOYPAD_X,
+    RETRO_DEVICE_ID_JOYPAD_Y,
+    RETRO_DEVICE_ID_JOYPAD_L,
+    RETRO_DEVICE_ID_JOYPAD_R,
+    RETRO_DEVICE_ID_JOYPAD_L2,
+    RETRO_DEVICE_ID_JOYPAD_R2,
+    RETRO_DEVICE_ID_JOYPAD_L3,
+    RETRO_DEVICE_ID_JOYPAD_R3,
 };
 
 static int msx_translate_button(int controller, const char *name);
@@ -404,7 +410,7 @@ static int msx_translate_ev_joystick(int controller, const char *name) {
         log_cb(RETRO_LOG_WARN, "MSX event %s not found", name);
         return 0;
     }
-    return mask << ((controller-1)*8);
+    return IS_JS_EVENT | (mask << ((controller-1)*8));
 }
 
 static int msx_translate_ev_keyboard(const char *name) {
@@ -663,40 +669,19 @@ void read_input_state() {
 
    joy_state = 0;
    for(int port = 0; port<2; port++) {
-      int port_state = 0;
-      for(int id=0; id<6; id++) {
-         if (input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, msx_to_retro_id[id])) {
-            port_state |= 1 << id;
-         }
+      for(int id = 0; id < MSX_GAMEPAD_MAP_SIZE; id++) {
+          if (input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, msx_gamepad_map_inputs[id])) {
+              int mapped_event = msx_gamepad_map[port * MSX_GAMEPAD_MAP_SIZE + id];
+              if (!mapped_event) continue;
+
+              if (mapped_event & IS_JS_EVENT) {
+                  joy_state |= mapped_event & MASK_JS_EVENT;
+              } else {
+                  KBD_SET(mapped_event);
+              }
+          }
       }
-      joy_state |= port_state << (port*8);
    }
-
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_START)) {
-      KBD_SET(KBD_SPACE);
-   }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_SELECT)) {
-      KBD_SET(KBD_ESCAPE);
-   }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_Y)) {
-      KBD_SET(KBD_SPACE);
-   }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_X)) {
-      KBD_SET(KBD_ENTER);
-   }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L)) {
-      KBD_SET(KBD_F1);
-   }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R)) {
-      KBD_SET(KBD_F5);
-   }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_L2)) {
-      KBD_SET(KBD_1);
-   }
-   if (input_state_cb(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_R2)) {
-      KBD_SET(KBD_2);
-   }
-
 }
 
 #ifdef PSP
