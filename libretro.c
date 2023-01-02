@@ -39,23 +39,23 @@ static uint16_t XPal0;
 #define MSX_GAMEPAD_MAP_SIZE 16
 static unsigned msx_gamepad_map[MSX_GAMEPAD_MAP_SIZE*2];
 static char *msx_gamepad_map_names[] = {
-    "left", "right", "up", "down",
+    "up", "down", "left", "right",
     "start", "select",
     "a", "b", "x", "y",
     "l", "r", "l2", "r2", "l3", "r3"
 };
 
 static const unsigned msx_gamepad_map_inputs[] = {
-    RETRO_DEVICE_ID_JOYPAD_LEFT,
-    RETRO_DEVICE_ID_JOYPAD_RIGHT,
     RETRO_DEVICE_ID_JOYPAD_UP,
     RETRO_DEVICE_ID_JOYPAD_DOWN,
+    RETRO_DEVICE_ID_JOYPAD_LEFT,
+    RETRO_DEVICE_ID_JOYPAD_RIGHT,
     RETRO_DEVICE_ID_JOYPAD_START,
     RETRO_DEVICE_ID_JOYPAD_SELECT,
-    RETRO_DEVICE_ID_JOYPAD_A,
     RETRO_DEVICE_ID_JOYPAD_B,
-    RETRO_DEVICE_ID_JOYPAD_X,
+    RETRO_DEVICE_ID_JOYPAD_A,
     RETRO_DEVICE_ID_JOYPAD_Y,
+    RETRO_DEVICE_ID_JOYPAD_X,
     RETRO_DEVICE_ID_JOYPAD_L,
     RETRO_DEVICE_ID_JOYPAD_R,
     RETRO_DEVICE_ID_JOYPAD_L2,
@@ -66,15 +66,15 @@ static const unsigned msx_gamepad_map_inputs[] = {
 
 static int msx_translate_button(int controller, const char *name);
 
-static const char *map_options = "Map; js_left|js_right|js_up|js_down|js_btn1|js_btn2|"
+static const char *map_options = "Map %d_%s; js_left|js_right|js_up|js_down|js_btn1|js_btn2|"
     "0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|"
-    "kbd_up|kbd_down|kbd_left|kdb_right|kbd_f1|kbd_f2|kbd_f3|kbd_f4|kbd_f5|"
+    "kbd_up|kbd_down|kbd_left|kbd_right|kbd_f1|kbd_f2|kbd_f3|kbd_f4|kbd_f5|"
     "kbd_escape|kbd_back|kbd_tab|kbd_return|kbd_ctrl|kbd_shift|"
     "kbd_caps|kbd_space|kbd_graph|kbd_code|"
     "kbd_select|kbd_home|kbd_insert|kbd_delete";
 
 static const char *msx_key_names[] = {
-    "kbd_up", "kbd_down", "kbd_left", "kdb_right", "kbd_f1", "kbd_f2", "kbd_f3", "kbd_f4", "kbd_f5",
+    "kbd_up", "kbd_down", "kbd_left", "kbd_right", "kbd_f1", "kbd_f2", "kbd_f3", "kbd_f4", "kbd_f5",
     "kbd_escape", "kbd_back", "kbd_tab", "kbd_return", "kbd_ctrl", "kbd_shift",
     "kbd_caps", "kbd_space", "kbd_graph", "kbd_code",
     "kbd_select", "kbd_home", "kbd_insert", "kbd_delete",
@@ -90,7 +90,7 @@ static const int msx_key_values[] = {
 };
 
 static const char *msx_js_names[] = {
-    "js_left", "js_right", "js_up", "js_down", "js_btn1", "js_btn2"
+    "js_up", "js_down", "js_left", "js_right", "js_btn1", "js_btn2"
 };
 
 uint16_t joy_state = 0;
