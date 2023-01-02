@@ -58,7 +58,7 @@ static char *msx_gamepad_map_names[] = {
     "l", "r", "l2", "r2", "l3", "r3"
 };
 
-static int msx_translate_button(const char *name);
+static int msx_translate_button(int controller, const char *name);
 
 static const char *map_options = "Map; js_left|js_right|js_up|js_down|js_btn1|js_btn2|"
     "0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|"
@@ -81,6 +81,10 @@ static const int msx_key_values[] = {
     KBD_CAPSLOCK, KBD_SPACE, KBD_GRAPH, KBD_COUNTRY,
     KBD_SELECT, KBD_HOME, KBD_INSERT, KBD_DELETE,
     0
+};
+
+static const char *msx_js_names[] = {
+    "js_left", "js_right", "js_up", "js_down", "js_btn1", "js_btn2"
 };
 
 uint16_t joy_state = 0;
@@ -376,7 +380,7 @@ static void check_variables(void)
             var.value = NULL;
             if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
                 int button_index = (controller - 1) * MSX_GAMEPAD_MAP_SIZE + button;
-                int button_value = msx_translate_button(var.value);
+                int button_value = msx_translate_button(controller, var.value);
                 msx_gamepad_map[button_index] = button_value;
                 log_cb(RETRO_LOG_INFO, "%s mapped to code %d (%s)", var.key, button_value, var.value);
             }
@@ -388,8 +392,19 @@ static void check_variables(void)
    Mode |= MSX_JOY2;
 }
 
-static int msx_translate_ev_joystick(const char *name) {
-    return 0x1001;
+static int msx_translate_ev_joystick(int controller, const char *name) {
+    int mask = 0;
+    for(int i=0; i<6; i++) {
+        if (!strcmp(name, msx_js_names[i])) {
+            mask = 1 << i;
+            break;
+        }
+    }
+    if (!mask) {
+        log_cb(RETRO_LOG_WARN, "MSX event %s not found", name);
+        return 0;
+    }
+    return mask << ((controller-1)*8);
 }
 
 static int msx_translate_ev_keyboard(const char *name) {
@@ -401,7 +416,7 @@ static int msx_translate_ev_keyboard(const char *name) {
         if (!strcmp(name, key_name)) return msx_key_values[index];
     } while (index++ < 100);
 
-    log_cb(RETRO_LOG_WARN, "MSX key %s not found", name);
+    log_cb(RETRO_LOG_WARN, "MSX event %s not found", name);
     return 0;
 }
 
@@ -410,8 +425,8 @@ static bool starts_with(const char *s, const char *prefix) {
     return !strncmp(s, prefix, strlen(prefix));
 }
 
-static int msx_translate_button(const char *name) {
-    if (starts_with(name, "js_")) return msx_translate_ev_joystick(&name[3]);
+static int msx_translate_button(int controller, const char *name) {
+    if (starts_with(name, "js_")) return msx_translate_ev_joystick(controller, name);
     if (starts_with(name, "kbd_")) return msx_translate_ev_keyboard(name);
     return name[0];
 }
@@ -651,7 +666,7 @@ void read_input_state() {
       int port_state = 0;
       for(int id=0; id<6; id++) {
          if (input_state_cb(port, RETRO_DEVICE_JOYPAD, 0, msx_to_retro_id[id])) {
-            port_state |= 1 << id;   
+            port_state |= 1 << id;
          }
       }
       joy_state |= port_state << (port*8);
