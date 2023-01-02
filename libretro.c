@@ -49,6 +49,40 @@ static const unsigned msx_to_retro_id[] = {
          RETRO_DEVICE_ID_JOYPAD_X
 };
 
+#define MSX_GAMEPAD_MAP_SIZE 16
+static unsigned msx_gamepad_map[MSX_GAMEPAD_MAP_SIZE*2];
+static char *msx_gamepad_map_names[] = {
+    "left", "right", "up", "down",
+    "start", "select",
+    "a", "b", "x", "y",
+    "l", "r", "l2", "r2", "l3", "r3"
+};
+
+static int msx_translate_button(const char *name);
+
+static const char *map_options = "Map; js_left|js_right|js_up|js_down|js_btn1|js_btn2|"
+    "0|1|2|3|4|5|6|7|8|9|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|"
+    "kbd_up|kbd_down|kbd_left|kdb_right|kbd_f1|kbd_f2|kbd_f3|kbd_f4|kbd_f5|"
+    "kbd_escape|kbd_back|kbd_tab|kbd_return|kbd_ctrl|kbd_shift|"
+    "kbd_caps|kbd_space|kbd_graph|kbd_code|"
+    "kbd_select|kbd_home|kbd_insert|kbd_delete";
+
+static const char *msx_key_names[] = {
+    "kbd_up", "kbd_down", "kbd_left", "kdb_right", "kbd_f1", "kbd_f2", "kbd_f3", "kbd_f4", "kbd_f5",
+    "kbd_escape", "kbd_back", "kbd_tab", "kbd_return", "kbd_ctrl", "kbd_shift",
+    "kbd_caps", "kbd_space", "kbd_graph", "kbd_code",
+    "kbd_select", "kbd_home", "kbd_insert", "kbd_delete",
+    NULL
+};
+
+static const int msx_key_values[] = {
+    KBD_UP, KBD_DOWN, KBD_LEFT, KBD_RIGHT, KBD_F1, KBD_F2, KBD_F3, KBD_F4, KBD_F5,
+    KBD_ESCAPE, KBD_BS, KBD_TAB, KBD_ENTER, KBD_CONTROL, KBD_SHIFT,
+    KBD_CAPSLOCK, KBD_SPACE, KBD_GRAPH, KBD_COUNTRY,
+    KBD_SELECT, KBD_HOME, KBD_INSERT, KBD_DELETE,
+    0
+};
+
 uint16_t joy_state = 0;
 
 uint8_t XKeyState[20];
@@ -195,8 +229,30 @@ void retro_set_environment(retro_environment_t cb)
       { NULL, NULL },
    };
 
+    // dynamically add vars for button mappings
+
+#define ORIGINAL_VARS_SIZE 5
+#define EXTENDED_VARS_SIZE (ORIGINAL_VARS_SIZE + MSX_GAMEPAD_MAP_SIZE*2 + 1)
+
+   static struct retro_variable vars_extended[EXTENDED_VARS_SIZE];
+   for(int i=0; i<ORIGINAL_VARS_SIZE; i++) {
+        vars_extended[i] = vars[i];
+   }
+
+   char var_name_buffer[256];
+   for(int controller = 1; controller <=2; controller++) {
+        for(int button = 0; button < MSX_GAMEPAD_MAP_SIZE; button++) {
+            sprintf(var_name_buffer, "msx_gamepad_%d_%s", controller, msx_gamepad_map_names[button]);
+            int var_index = (controller-1) * MSX_GAMEPAD_MAP_SIZE + button + ORIGINAL_VARS_SIZE;
+            vars_extended[var_index].key = strdup(var_name_buffer);
+            vars_extended[var_index].value = map_options;
+        }
+   }
+   vars_extended[EXTENDED_VARS_SIZE - 1].key   = NULL;
+   vars_extended[EXTENDED_VARS_SIZE - 1].value = NULL;
+
    cb(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO, (void*)ports);
-   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars);
+   cb(RETRO_ENVIRONMENT_SET_VARIABLES, (void*)vars_extended);
 }
 
 void retro_set_video_refresh(retro_video_refresh_t cb) { video_cb = cb; }
@@ -312,10 +368,52 @@ static void check_variables(void)
 	   FMPACOn = strcmp(var.value, "true") == 0;
    }
 
+   char buffer[256];
+   for(int controller = 1; controller <= 2; controller++) {
+       for(int button = 0; button < MSX_GAMEPAD_MAP_SIZE; button++) {
+            sprintf(buffer, "msx_gamepad_%d_%s", controller, msx_gamepad_map_names[button]);
+            var.key = buffer;
+            var.value = NULL;
+            if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value) {
+                int button_index = (controller - 1) * MSX_GAMEPAD_MAP_SIZE + button;
+                int button_value = msx_translate_button(var.value);
+                msx_gamepad_map[button_index] = button_value;
+                log_cb(RETRO_LOG_INFO, "%s mapped to code %d (%s)", var.key, button_value, var.value);
+            }
+       }
+   }
 
    // enable joystick on port 1 & 2
    Mode |= MSX_JOY1;
    Mode |= MSX_JOY2;
+}
+
+static int msx_translate_ev_joystick(const char *name) {
+    return 0x1001;
+}
+
+static int msx_translate_ev_keyboard(const char *name) {
+    int index = 0;
+    do {
+        const char *key_name = msx_key_names[index];
+        if (!key_name) break;
+
+        if (!strcmp(name, key_name)) return msx_key_values[index];
+    } while (index++ < 100);
+
+    log_cb(RETRO_LOG_WARN, "MSX key %s not found", name);
+    return 0;
+}
+
+static bool starts_with(const char *s, const char *prefix) {
+    if (strlen(s) < strlen(prefix)) return false;
+    return !strncmp(s, prefix, strlen(prefix));
+}
+
+static int msx_translate_button(const char *name) {
+    if (starts_with(name, "js_")) return msx_translate_ev_joystick(&name[3]);
+    if (starts_with(name, "kbd_")) return msx_translate_ev_keyboard(name);
+    return name[0];
 }
 
 bool retro_load_game(const struct retro_game_info *info)
